@@ -1,0 +1,35 @@
+@Library('Shared-github') _
+pipeline{
+    agent{
+        label 'worker'
+    }
+    environment{
+        Repo_name = 'jenkins-test'
+    }
+    
+    stages{
+        stage('checkout'){
+            steps{
+                checkout('https://github.com/nishantxrana/django-notes-app-jenkins.git','main')
+            }
+        }
+        stage("Build & Push Docker image") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'DockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]){
+                    script{
+                        env.Docker_Username = USERNAME
+                        def docker_image = docker.build("${env.Docker_Username}/${env.Repo_name}:${env.BUILD_ID}")
+                        withDockerRegistry(credentialsId: 'DockerHub') {
+                            docker_image.push("${env.BUILD_ID}")
+                        }
+                    }
+                    
+                }
+                
+            }
+        }
+
+
+
+    }
+}
